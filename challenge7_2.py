@@ -3,21 +3,60 @@
 import pandas as pd
 
 def co2_gdp_plot():
-    #¶ÁÈ¡ÊÀ½çÒøĞĞÆøºò±ä»¯Êı¾İ¼¯
-    df_climate = pd.read_excel("ClimateChange.xlsx",sheetname='±íÃû')
+    #è¯»å–ä¸–ç•Œé“¶è¡Œæ°”å€™å˜åŒ–æ•°æ®é›†
+    df_climate = pd.read_excel("ClimateChange.xlsx",sheetname='Data')
+    df_country = pd.read_excel("ClimateChange.xlsx",sheetname='Country')
     
-    # 1.²é¿´Êı¾İÎÄ¼ş½á¹¹
-    # 2.Ñ¡Ôñ co2 ºÍ GDP Êı¾İ
-    # 3.Õë¶ÔÈ±Ê§Êı¾İ½øĞĞ´¦Àí
-    # 4.·Ö¹ú¼Ò¼ÆËãÊı¾İ×ÜºÍ
-    # 5.¹éÒ»»¯Êı¾İ
-    # 6.»æÍ¼
+    # 1.æŸ¥çœ‹æ•°æ®æ–‡ä»¶ç»“æ„
+    
+    # 2.é€‰æ‹© co2 å’Œ GDP æ•°æ®
+    df_co2 = df_climate[df_climate['Series code']=='EN.ATM.CO2E.KT']
+    df_gdp = df_climate[df_climate['Series code']=='NY.GDP.MKTP.CD']
+    
+    df_co2_1 = df_co2.drop(['Country name','Series code','Series name','SCALE','Decimals'],axis=1).set_index('Country code')
+    df_gdp_1 = df_gdp.drop(['Country name','Series code','Series name','SCALE','Decimals'],axis=1).set_index('Country code')
+    
+    df_co2_replace = df_co2_1.replace({'..':pd.np.NaN})
+    df_gdp_replace = df_gdp_1.replace({'..':pd.np.NaN})
+    
+    # 3.é’ˆå¯¹ç¼ºå¤±æ•°æ®è¿›è¡Œå¤„ç†
+    df_co2_fill = df_co2_replace.fillna(method='ffill',axis=1).fillna(method='bfill',axis=1).fillna(0)
+    df_gdp_fill = df_gdp_replace.fillna(method='ffill',axis=1).fillna(method='bfill',axis=1).fillna(0)
 
-    # »æÍ¼¶ÔÏó
-    fig = plt.subplot()
+    df_co2_fill.dropna(how='all',inplace=True)
+    df_gdp_fill.dropna(how='all',inplace=True)
+    
+    # 4.åˆ†å›½å®¶è®¡ç®—æ•°æ®æ€»å’Œ
+    df_co2_fill['total'] = df_co2_fill.apply(lambda x:x.sum(),axis=1)
+    df_gdp_fill['total'] = df_gdp_fill.apply(lambda x:x.sum(),axis=1)
+    
+    # 5.å½’ä¸€åŒ–æ•°æ®
+    xc_max = df_co2_fill['total'].max()
+    xc_min = df_co2_fill['total'].min()
+    df_co2_fill['normalized'] = df_co2_fill['total'].apply(lambda x:round((x-xc_min)/(xc_max-xc_min),3))
+    
+    xg_max = df_gdp_fill['total'].max()
+    xg_min = df_gdp_fill['total'].min()
+    df_gdp_fill['normalized'] = df_gdp_fill['total'].apply(lambda x:round((x-xg_min)/(xg_max-xg_min),3))
 
-    # ·µ»ØÖĞ¹úËù¶ÔÓ¦µÄÊı¾İ£¨¹éÒ»»¯ºó£¬±£Áô3Î»Ğ¡Êı£©
-    china = [CO2Êı¾İ,GDPÊı¾İ]
+    df_coun = df_country.drop(['Capital city','Region','Income group'],axis=1).set_index('Country code')
+        
+    df_co2_comb = pd.merge(df_coun,df_co2_fill,left_index=True,right_index=True)
+    df_gdp_comb = pd.merge(df_coun,df_gdp_fill,left_index=True,right_index=True)
+     
+    print(df_co2_comb.head(10))
+    print(df_gdp_comb.head(10))
+    
+    # 6.ç»˜å›¾
 
-    # ·µ»Øfig¶ÔÏó£¬ÒÔ¼°ÖĞ¹ú¶ÔÓ¦µÄÊı¾İÁĞ±í
-    return fig,china
+    # ç»˜å›¾å¯¹è±¡
+    #fig = plt.subplot()
+
+    # è¿”å›ä¸­å›½æ‰€å¯¹åº”çš„æ•°æ®ï¼ˆå½’ä¸€åŒ–åï¼Œä¿ç•™3ä½å°æ•°ï¼‰
+    #china = [CO2æ•°æ®,GDPæ•°æ®]
+
+    # è¿”å›figå¯¹è±¡ï¼Œä»¥åŠä¸­å›½å¯¹åº”çš„æ•°æ®åˆ—è¡¨
+    #return fig,china
+
+if __name__ == '__main__':
+    co2_gdp_plot()
